@@ -81,6 +81,24 @@ public class EmailService {
         send(to, title, message, html);
     }
 
+    /**
+     * Mensagem de suporte para a equipe. O visitante vai em Reply-To, então responder o
+     * email já responde a ele (o Gmail e outros SMTPs fixam o remetente real em From).
+     */
+    public void sendSupport(String to, String senderName, String senderEmail, String message) {
+        // Defesa extra: nome vira parte do assunto, então não pode ter quebra de linha.
+        String safeName = senderName.replaceAll("[\\r\\n]+", " ").trim();
+        String text = """
+                Nova mensagem de suporte
+
+                Nome: %s
+                Email: %s
+
+                %s
+                """.formatted(safeName, senderEmail, message);
+        dispatch(Mail.withText(to, "[Suporte] Mensagem de " + safeName, text).setReplyTo(senderEmail));
+    }
+
     private void dispatch(Mail mail) {
         try {
             mailer.send(mail);

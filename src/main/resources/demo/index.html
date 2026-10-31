@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste de contas e emails</title>
+  <style>
+    :root {
+      --bg: #f4f5f7; --card: #ffffff; --text: #1f2933; --muted: #52606d; --line: #d9dee3;
+      --accent: #2563eb; --accent-text: #ffffff; --ok: #0f766e; --ok-bg: #e6f4f1;
+      --err: #b42318; --err-bg: #fdecea; --code: #f0f2f5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12161c; --card: #1b222b; --text: #e6e9ed; --muted: #9aa5b1; --line: #2d3743;
+        --accent: #5b8def; --accent-text: #0b1220; --ok: #4fd1c5; --ok-bg: #12302d;
+        --err: #ff8a80; --err-bg: #3a1c1a; --code: #141a21;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .sub { margin: 0 0 12px; color: var(--muted); font-size: .95rem; }
+    .badge {
+      display: inline-block; margin: 0 0 16px; padding: 4px 10px; border-radius: 999px;
+      font-size: .85rem; background: var(--code); color: var(--muted);
+    }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    [role="tablist"] { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+    [role="tab"] {
+      flex: 1 1 auto; padding: 12px 14px; border: 0; background: none; color: var(--muted);
+      font: inherit; font-size: .95rem; cursor: pointer; border-bottom: 2px solid transparent;
+    }
+    [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    [role="tab"]:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 2px;
+    }
+    [role="tabpanel"] { padding: 20px; }
+    [hidden] { display: none !important; }
+    p.hint { margin: 0 0 16px; color: var(--muted); font-size: .9rem; }
+    label { display: block; margin: 0 0 4px; font-size: .9rem; font-weight: 600; }
+    .field { margin-bottom: 14px; }
+    input, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
+      background: var(--bg); color: var(--text); font: inherit;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    button.primary {
+      width: 100%; padding: 11px 16px; border: 0; border-radius: 6px; cursor: pointer;
+      background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600;
+    }
+    button.primary:disabled { opacity: .6; cursor: wait; }
+    .feedback { margin-top: 16px; padding: 14px 16px; border-radius: 8px; border: 1px solid var(--line); }
+    .feedback.ok { background: var(--ok-bg); border-color: var(--ok); }
+    .feedback.error { background: var(--err-bg); border-color: var(--err); }
+    .feedback strong { display: block; margin-bottom: 2px; }
+    .feedback.ok strong { color: var(--ok); }
+    .feedback.error strong { color: var(--err); }
+    .feedback p { margin: 0; font-size: .95rem; }
+    details { margin-top: 10px; font-size: .85rem; color: var(--muted); }
+    summary { cursor: pointer; }
+    pre {
+      margin: 8px 0 0; padding: 10px; background: var(--code); border-radius: 6px;
+      overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-size: .8rem;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Teste de contas e emails</h1>
+  <p class="sub">Página de demonstração do <code>service-email</code>. As contas ficam só na memória e somem quando o servidor reinicia.</p>
+  <p id="mode" class="badge" role="status">Verificando a configuração de email…</p>
+
+  <div class="card">
+    <div role="tablist" aria-label="Fluxos de teste">
+      <button role="tab" id="tab-signup" aria-controls="panel-signup" aria-selected="true" data-tab="signup">Criar conta</button>
+      <button role="tab" id="tab-login" aria-controls="panel-login" aria-selected="false" tabindex="-1" data-tab="login">Login</button>
+      <button role="tab" id="tab-forgot" aria-controls="panel-forgot" aria-selected="false" tabindex="-1" data-tab="forgot">Esqueci a senha</button>
+      <button role="tab" id="tab-support" aria-controls="panel-support" aria-selected="false" tabindex="-1" data-tab="support">Suporte</button>
+      <button role="tab" id="tab-reset" aria-controls="panel-reset" aria-selected="false" tabindex="-1" data-tab="reset" hidden>Nova senha</button>
+    </div>
+
+    <section id="panel-signup" role="tabpanel" aria-labelledby="tab-signup">
+      <p class="hint">Cria a conta e envia o email de boas-vindas.</p>
+      <form data-flow="signup">
+        <div class="field"><label for="signup-name">Nome</label>
+          <input id="signup-name" name="name" type="text" autocomplete="name" maxlength="100" required></div>
+        <div class="field"><label for="signup-email">Email</label>
+          <input id="signup-email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+        <div class="field"><label for="signup-password">Senha (mínimo 8 caracteres)</label>
+          <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="100" required></div>
+        <button class="primary" type="submit">Criar conta</button>
+      </form>
+    </section>
+
+    <section id="panel-login" role="tabpanel" aria-labelledby="tab-login" hidden>
+      <p class="hint">Confere email e senha de uma conta criada nesta página.</p>
+      <form data-flow="login">
+        <div class="field"><label for="login-email">Email</label>
+          <input id="login-email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+        <div class="field"><label for="login-password">Senha</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" maxlength="100" required></div>
+        <button class="primary" type="submit">Entrar</button>
+      </form>
+    </section>
+
+    <section id="panel-forgot" role="tabpanel" aria-labelledby="tab-forgot" hidden>
+      <p class="hint">Envia um link para redefinir a senha. O link vale 30 minutos e só pode ser usado uma vez.</p>
+      <form data-flow="forgot">
+        <div class="field"><label for="forgot-email">Email da conta</label>
+          <input id="forgot-email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+        <button class="primary" type="submit">Enviar link de redefinição</button>
+      </form>
+    </section>
+
+    <section id="panel-support" role="tabpanel" aria-labelledby="tab-support" hidden>
+      <p class="hint" id="support-hint">Envia uma mensagem para o email de suporte. Quem responde, responde direto para o email informado aqui.</p>
+      <form data-flow="support">
+        <div class="field"><label for="support-name">Nome</label>
+          <input id="support-name" name="name" type="text" autocomplete="name" maxlength="100" required></div>
+        <div class="field"><label for="support-email">Seu email</label>
+          <input id="support-email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+        <div class="field"><label for="support-message">Mensagem</label>
+          <textarea id="support-message" name="message" maxlength="5000" required></textarea></div>
+        <button class="primary" type="submit">Enviar ao suporte</button>
+      </form>
+    </section>
+
+    <section id="panel-reset" role="tabpanel" aria-labelledby="tab-reset" hidden>
+      <p class="hint">Você chegou aqui pelo link do email. Escolha a nova senha.</p>
+      <form data-flow="reset">
+        <input type="hidden" id="reset-token" name="token">
+        <div class="field"><label for="reset-password">Nova senha (mínimo 8 caracteres)</label>
+          <input id="reset-password" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="100" required></div>
+        <button class="primary" type="submit">Salvar nova senha</button>
+      </form>
+    </section>
+  </div>
+
+  <div id="feedback" class="feedback" role="status" aria-live="polite" hidden>
+    <strong id="feedback-title"></strong>
+    <p id="feedback-text"></p>
+    <details>
+      <summary>Resposta técnica</summary>
+      <pre id="feedback-raw"></pre>
+    </details>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var state = { mock: true };
+  var $ = function (sel) { return document.querySelector(sel); };
+
+  // ------------------------------------------------------------------ abas
+  function selectTab(name) {
+    document.querySelectorAll('[role="tab"]').forEach(function (tab) {
+      var active = tab.dataset.tab === name;
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+    });
+    document.querySelectorAll('[role="tabpanel"]').forEach(function (panel) {
+      panel.hidden = panel.id !== 'panel-' + name;
+    });
+    hideFeedback();
+  }
+  document.querySelectorAll('[role="tab"]').forEach(function (tab) {
+    tab.addEventListener('click', function () { selectTab(tab.dataset.tab); });
+  });
+
+  // -------------------------------------------------------------- feedback
+  function hideFeedback() { $('#feedback').hidden = true; }
+
+  // Todo texto vindo do servidor entra via textContent, nunca como HTML.
+  function showFeedback(kind, title, text, raw) {
+    var box = $('#feedback');
+    box.className = 'feedback ' + kind;
+    $('#feedback-title').textContent = title;
+    $('#feedback-text').textContent = text;
+    $('#feedback-raw').textContent = typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2);
+    box.hidden = false;
+  }
+
+  function describeError(data) {
+    if (data && Array.isArray(data.violations)) {
+      return data.violations.map(function (v) {
+        var field = String(v.field || '').split('.').pop();
+        return (field ? field + ': ' : '') + v.message;
+      }).join(' · ');
+    }
+    if (data && data.message) { return data.message; }
+    return 'Erro inesperado.';
+  }
+
+  function mockNote() {
+    return state.mock ? ' O modo é mock: o email não sai de verdade, o conteúdo aparece no terminal do servidor.' : '';
+  }
+
+  // ------------------------------------------------------------------ API
+  async function call(path, method, body) {
+    var res = await fetch('/demo/api' + path, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var text = await res.text();
+    var data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+    return { status: res.status, ok: res.ok, data: data };
+  }
+
+  function copyEmail(email) {
+    ['#login-email', '#forgot-email', '#support-email'].forEach(function (sel) { $(sel).value = email; });
+  }
+
+  var flows = {
+    signup: {
+      path: '/signup',
+      render: function (r, body, form) {
+        if (r.ok) {
+          copyEmail(r.data.email);
+          form.reset();
+          if (r.data.welcomeEmail === 'sent') {
+            showFeedback('ok', 'Conta criada', 'Enviamos o email de boas-vindas para ' + r.data.email + '.' + mockNote(), r);
+          } else {
+            showFeedback('error', 'Conta criada, mas o email falhou',
+              'A conta existe, porém o email de boas-vindas não foi enviado. Veja o erro no terminal do servidor.', r);
+          }
+        } else {
+          showFeedback('error', 'Não foi possível criar a conta', describeError(r.data), r);
+        }
+      }
+    },
+    login: {
+      path: '/login',
+      render: function (r, body, form) {
+        if (r.ok) {
+          form.reset();
+          showFeedback('ok', 'Login OK', 'Olá, ' + r.data.name + '! (' + r.data.email + ')', r);
+        } else {
+          showFeedback('error', 'Login recusado', describeError(r.data), r);
+        }
+      }
+    },
+    forgot: {
+      path: '/forgot-password',
+      render: function (r) {
+        if (r.ok) {
+          showFeedback('ok', 'Pedido recebido',
+            r.data.message + ' Confira também a caixa de spam.' + mockNote()
+            + ' Se nada chegar, veja o erro no terminal do servidor.', r);
+        } else {
+          showFeedback('error', 'Não foi possível pedir a redefinição', describeError(r.data), r);
+        }
+      }
+    },
+    support: {
+      path: '/support',
+      render: function (r, body, form) {
+        if (r.ok) {
+          form.querySelector('textarea').value = '';
+          showFeedback('ok', 'Mensagem enviada', r.data.message + mockNote(), r);
+        } else {
+          showFeedback('error', 'Não foi possível enviar', describeError(r.data), r);
+        }
+      }
+    },
+    reset: {
+      path: '/reset-password',
+      render: function (r, body, form) {
+        if (r.ok) {
+          form.reset();
+          $('#reset-token').value = '';
+          $('#tab-reset').hidden = true;
+          selectTab('login');
+          showFeedback('ok', 'Senha alterada', r.data.message, r);
+        } else {
+          showFeedback('error', 'Não foi possível alterar a senha', describeError(r.data), r);
+        }
+      }
+    }
+  };
+
+  document.querySelectorAll('form[data-flow]').forEach(function (form) {
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var flow = flows[form.dataset.flow];
+      var body = Object.fromEntries(new FormData(form));
+      var button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      try {
+        var result = await call(flow.path, 'POST', body);
+        flow.render(result, body, form);
+      } catch (err) {
+        showFeedback('error', 'Sem resposta do servidor',
+          'Confirme que o servidor está rodando e tente de novo.', String(err));
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
+  // ------------------------------------------- link de redefinição (?token=)
+  var token = new URLSearchParams(window.location.search).get('token');
+  if (token) {
+    $('#reset-token').value = token;
+    $('#tab-reset').hidden = false;
+    selectTab('reset');
+    // Tira o token da barra de endereço para não ficar no histórico nem ser copiado sem querer.
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  // ---------------------------------------------------- modo de envio (mock/SMTP)
+  call('/info', 'GET').then(function (r) {
+    if (!r.ok) { $('#mode').textContent = 'Não foi possível ler a configuração de email.'; return; }
+    state.mock = r.data.mailMode === 'mock';
+    $('#mode').textContent = state.mock
+      ? 'Modo mock: os emails não saem de verdade, aparecem só no terminal do servidor.'
+      : 'Envio real via SMTP (' + r.data.smtpHost + '). Suporte recebe em ' + r.data.supportTo + '.';
+  }).catch(function () {
+    $('#mode').textContent = 'Não foi possível ler a configuração de email.';
+  });
+})();
+</script>
+</body>
+</html>

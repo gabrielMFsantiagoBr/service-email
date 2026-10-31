@@ -6,7 +6,8 @@ Serviço de envio de emails (Java 21 + Quarkus). Outros serviços chamam uma API
 a mensagem via SMTP (Gmail, SendGrid, Amazon SES, etc.) usando a extensão `quarkus-mailer`.
 
 Ele **só envia** email. Não gera tokens de recuperação de senha nem guarda usuários: quem chama
-(o backend do site) monta o link e envia aqui.
+(o backend do site) monta o link e envia aqui. A única exceção é a [página de teste](#página-de-teste-demo),
+que cria contas em memória só para exercitar os emails.
 
 ## Como o frontend deve usar
 
@@ -41,6 +42,45 @@ Em modo dev o Swagger UI fica em <http://localhost:8080/q/swagger-ui> e o contra
 Sem `QUARKUS_MAILER_MOCK=false`, o mailer roda em modo mock em dev e em teste: nada é enviado,
 o email só aparece no log.
 
+## Página de teste (`/demo`)
+
+Com o servidor rodando em modo dev, abra <http://localhost:8080/demo>. Ela testa, de ponta a
+ponta, os quatro fluxos que mais usam email:
+
+| Aba | O que faz | Email enviado |
+|---|---|---|
+| Criar conta | Cadastra nome, email e senha | Boas-vindas |
+| Login | Confere email e senha | Nenhum |
+| Esqueci a senha | Gera um link de uso único (vale 30 min) | Link de redefinição. Ao abrir, aparece a aba "Nova senha" |
+| Suporte | Manda uma mensagem à equipe | Para `SUPPORT_EMAIL`, com o visitante em `Reply-To` |
+
+Uma faixa no topo da página mostra se os emails estão em modo **mock** (só aparecem no terminal)
+ou saindo por **SMTP** de verdade.
+
+### Testando com Gmail
+
+1. Na conta Google, ative a verificação em duas etapas e crie uma **senha de app**
+   (Conta Google > Segurança > Senhas de app). A senha normal não funciona.
+2. No `.env`, use o bloco "Opção B: Gmail" do `.env.example` (host `smtp.gmail.com`, porta 587,
+   `QUARKUS_MAILER_MOCK=false`, `MAIL_USERNAME`/`MAIL_FROM` com o seu Gmail e `MAIL_PASSWORD` com
+   a senha de app). Defina `SUPPORT_EMAIL` com o endereço que deve receber as mensagens de suporte.
+3. Rode `mvn quarkus:dev` e abra `/demo`. A faixa do topo deve mostrar `smtp.gmail.com`.
+4. Crie uma conta com um email seu e confira a caixa de entrada (e o spam).
+
+O Gmail grava sempre a conta autenticada como remetente (`From`), independente do `MAIL_FROM`.
+Por isso a aba Suporte coloca o email de quem escreveu em `Reply-To`.
+
+### O que a demo é e o que não é
+
+É uma ferramenta para exercitar o envio de email. As contas ficam **só na memória** e somem ao
+reiniciar, e não há sessão: o "login" apenas confere a senha. As senhas são guardadas com
+PBKDF2-HMAC-SHA256 e salt, e o token de redefinição é aleatório, de uso único e guardado só como
+hash. Mesmo assim, não é um sistema de autenticação para usar em produção.
+
+A página vem **desligada fora do modo dev** (`/demo` responde 404), porque deixaria qualquer
+visitante criar contas e disparar emails pelo seu SMTP. Só ligue de propósito, com
+`DEMO_ENABLED=true`, em um ambiente que não seja público.
+
 ## Configuração (variáveis de ambiente)
 
 | Variável | Padrão | Descrição |
@@ -54,6 +94,9 @@ o email só aparece no log.
 | `QUARKUS_MAILER_MOCK` | `true` em dev/teste | `false` para enviar de verdade |
 | `APP_NAME` | `Service Email` | Nome do site nos assuntos e templates |
 | `EMAIL_API_KEY` | vazio | Se definida, exige o header `X-API-Key` em `/api/**` |
+| `DEMO_ENABLED` | `true` em dev/teste, `false` no resto | Liga a página `/demo` e a API `/demo/api/**` |
+| `APP_BASE_URL` | `http://localhost:8080` | Endereço da aplicação; base do link de redefinição da demo |
+| `SUPPORT_EMAIL` | o valor de `MAIL_FROM` | Quem recebe as mensagens da aba Suporte |
 | `PORT` | `8080` | Porta HTTP |
 
 **Em produção, defina sempre `EMAIL_API_KEY`.** Sem ela, qualquer um que alcance o serviço
