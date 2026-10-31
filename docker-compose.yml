@@ -1,0 +1,7 @@
+# SMTP de mentira para desenvolvimento: captura os emails e mostra numa interface web.
+services:
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # interface web: http://localhost:8025
